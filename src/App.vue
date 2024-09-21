@@ -1,30 +1,41 @@
-<script setup>
-import HelloWorld from './components/HelloWorld.vue'
-</script>
-
 <template>
-  <div>
-    <a href="https://vitejs.dev" target="_blank">
-      <img src="/vite.svg" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://vuejs.org/" target="_blank">
-      <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
-    </a>
+  <div class="container">
+    <h1 class="text-center my-4">Boolflix</h1>
+    <!-- Search bar per cercare film -->
+    <SearchBar @search="handleSearch" />
+    <!-- Lista dei film trovati -->
+    <MovieList :movies="movies" />
   </div>
-  <HelloWorld msg="Vite + Vue" />
 </template>
 
-<style scoped>
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #42b883aa);
-}
-</style>
+<script>
+import SearchBar from './components/SearchBar.vue';
+import MovieList from './components/MovieList.vue';
+
+export default {
+  components: {
+    SearchBar,
+    MovieList,
+  },
+  data() {
+    return {
+      movies: [], // Array di film che verranno visualizzati
+    };
+  },
+  methods: {
+    // Metodo per gestire la ricerca e fare la chiamata API
+    handleSearch(query) {
+      const apiKey = '3e71fbf202442d5cfffde584ebf5b815'; // 
+      const apiUrl = `https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&query=${query}&language=it_IT`;
+
+      // Chiamata all'API TheMovieDb
+      fetch(apiUrl)
+        .then(response => response.json())
+        .then(data => {
+          this.movies = data.results; // Aggiorna l'array dei film
+        })
+        .catch(error => console.error('Errore API:', error));
+    },
+  },
+};
+</script>
