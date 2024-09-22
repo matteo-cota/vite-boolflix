@@ -1,12 +1,13 @@
 <template>
     <div class="input-group mb-3">
-      <input 
-        v-model="searchQuery" 
-        type="text" 
-        class="form-control" 
-        placeholder="Cerca un film..."
+      <input
+        type="text"
+        class="form-control"
+        placeholder="Cerca un film o una serie TV"
+        v-model="searchQuery"
+        @keydown.enter="emitSearch" 
       />
-      <button class="btn btn-primary" @click="searchMovie">Cerca</button>
+      <button class="btn btn-primary" @click="emitSearch">Cerca</button>
     </div>
   </template>
   
@@ -14,14 +15,20 @@
   export default {
     data() {
       return {
-        searchQuery: '',
+        searchQuery: '', 
       };
     },
     methods: {
-      searchMovie() {
-        // Emette l'evento 'search' con la query di ricerca
-        this.$emit('search', this.searchQuery);
+      emitSearch() {
+        if (this.searchQuery.trim()) {
+          this.$emit('search', this.searchQuery); 
+        }
       },
     },
   };
   </script>
+  
+  <style scoped>
+  
+  </style>
+  
