@@ -1,20 +1,72 @@
 <template>
-  <div class="container">
-    <h1 class="text-center my-4">Boolflix</h1>
-    
-    <!-- Barra di ricerca per inserire il nome del film o della serie -->
-    <SearchBar @search="handleSearch" />
-    
-    <!-- Mostra i risultati solo se ci sono film o serie TV -->
-    <div v-if="movies.length > 0">
-      <h2 class="my-4">Risultati:</h2>
-      <MovieList :movies="movies" />
-    </div>
+  <div id="app">
+    <!-- Header con logo e nav bar -->
+    <header class="bg-dark text-light py-3 mb-4">
+      <div class="container d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+          <img src="/src/img/boolflix.png" alt="Logo Boolflix">
+          <nav>
+            <ul class="nav">
+              <li class="nav-item">
+                <a class="nav-link text-light" href="#" @click="loadHome">Home</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link text-light" href="#" @click="loadMovies">Film</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link text-light" href="#" @click="loadTvShows">Serie TV</a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+        <div class="d-flex align-items-center">
+          <SearchBar @search="handleSearch" />
+          <i class="fa-solid fa-bell"></i>
+          <button class="btn btn-light ms-2">Account</button>
+        </div>
+      </div>
+    </header>
 
-    <!-- Messaggio di nessun risultato -->
-    <div v-else class="text-center">
-      <p>Nessun film o serie TV trovata. Prova con un'altra ricerca!</p>
-    </div>
+    <main class="container mt-4">
+      <!-- Sezione Home: mostra sia film che serie TV -->
+      <div v-if="currentSection === 'home'" class="row g-4">
+        <h3 class="text-light mb-4">Film</h3>
+        <MovieList :movies="movies" />
+
+        <h3 class="text-light mb-4">Serie TV</h3>
+        <MovieList :movies="tvShows" />
+      </div>
+
+      <!-- Sezione Film -->
+      <div v-if="currentSection === 'movies' && movies.length > 0" class="row g-4">
+        <h3 class="text-light mb-4">Film</h3>
+        <MovieList :movies="movies" />
+      </div>
+
+      <!-- Sezione Serie TV -->
+      <div v-if="currentSection === 'tvShows' && tvShows.length > 0" class="row g-4">
+        <h3 class="text-light mb-4">Serie TV</h3>
+        <MovieList :movies="tvShows" />
+      </div>
+
+      <!-- Messaggio se non ci sono risultati -->
+      <div v-if="(currentSection === 'home' && movies.length === 0 && tvShows.length === 0) || (currentSection === 'movies' && movies.length === 0) || (currentSection === 'tvShows' && tvShows.length === 0)" class="text-center text-light mt-4">
+        <p>Nessun film o serie TV trovata. Prova con un'altra ricerca!</p>
+      </div>
+    </main>
+
+    <!-- Footer con icone social -->
+    <footer class="bg-dark text-light py-3 mt-4">
+      <div class="container text-center">
+        <p>&copy; 2024 Boolflix. Tutti i diritti riservati.</p>
+        <div class="social-icons">
+          <a href="#" class="text-light me-3"><i class="fab fa-facebook"></i></a>
+          <a href="#" class="text-light me-3"><i class="fab fa-twitter"></i></a>
+          <a href="#" class="text-light me-3"><i class="fab fa-instagram"></i></a>
+          <a href="#" class="text-light"><i class="fab fa-linkedin"></i></a>
+        </div>
+      </div>
+    </footer>
   </div>
 </template>
 
@@ -29,31 +81,99 @@ export default {
   },
   data() {
     return {
-      movies: [], // Lista di film e serie TV trovati
+      movies: [],
+      tvShows: [],
+      currentSection: 'home',
     };
   },
   methods: {
-    // Gestisce la ricerca di film e serie TV tramite l'API
     handleSearch(query) {
       const apiKey = '3e71fbf202442d5cfffde584ebf5b815';
       const movieApiUrl = `https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&query=${query}&language=it_IT`;
       const tvApiUrl = `https://api.themoviedb.org/3/search/tv?api_key=${apiKey}&query=${query}&language=it_IT`;
 
-      // Effettua le chiamate API per film e serie TV
       Promise.all([fetch(movieApiUrl), fetch(tvApiUrl)])
         .then(async ([movieResponse, tvResponse]) => {
           const moviesData = await movieResponse.json();
           const tvData = await tvResponse.json();
-          
-          // Combina i risultati dei film e delle serie TV
-          this.movies = [...moviesData.results, ...tvData.results];
+          this.movies = moviesData.results || [];
+          this.tvShows = tvData.results || [];
+          this.currentSection = 'home'; // Imposta la sezione su "Home" dopo la ricerca
         })
         .catch(error => console.error('Errore API:', error));
     },
+
+    loadHome() {
+      this.currentSection = 'home';
+      this.loadMovies();
+      this.loadTvShows();
+    },
+
+    loadMovies() {
+      this.currentSection = 'movies';
+      const apiKey = '3e71fbf202442d5cfffde584ebf5b815';
+      const popularMoviesApiUrl = `https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}&language=it_IT`;
+
+      fetch(popularMoviesApiUrl)
+        .then(response => response.json())
+        .then(data => {
+          this.movies = data.results || [];
+          this.tvShows = []; // Reset serie TV
+        })
+        .catch(error => console.error('Errore API film popolari:', error));
+    },
+
+    loadTvShows() {
+      this.currentSection = 'tvShows';
+      const apiKey = '3e71fbf202442d5cfffde584ebf5b815';
+      const popularTvShowsApiUrl = `https://api.themoviedb.org/3/tv/popular?api_key=${apiKey}&language=it_IT`;
+
+      fetch(popularTvShowsApiUrl)
+        .then(response => response.json())
+        .then(data => {
+          this.tvShows = data.results || [];
+          this.movies = []; // Reset film
+        })
+        .catch(error => console.error('Errore API serie TV popolari:', error));
+    },
+  },
+  mounted() {
+    this.loadHome();
   },
 };
 </script>
 
-<style>
+<style scoped>
+/* Stili per il layout */
+header {
+  background-color: #141414;
+}
 
+.nav {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.fa-bell {
+  margin: 10px;
+}
+
+.nav-item {
+  margin-right: 15px;
+}
+
+.btn-light {
+  background-color: #333;
+  color: white;
+  margin: 10px;
+}
+
+.btn-light:hover {
+  background-color: #444;
+}
+
+.container {
+  max-width: 1200px;
+}
 </style>
