@@ -1,33 +1,33 @@
 <template>
-  <div class="col-md-3">
-    <div 
-      class="movie-card position-relative" 
-      @mouseover="showDetails = true" 
-      @mouseleave="showDetails = false"
-      :style="{ backgroundImage: `url(https://image.tmdb.org/t/p/w342/${movie.poster_path})` }"
-    >
-      <!-- Dettagli visibili solo al passaggio del mouse -->
-      <div v-if="showDetails" class="movie-details p-3 text-light">
-        <h5>{{ movie.title || movie.name }}</h5>
-        <p>Titolo Originale: {{ movie.original_title || movie.original_name }}</p>
-        <p>
-          Lingua: 
-          <img 
-            :src="getFlagUrl(movie.original_language)" 
-            alt="Bandiera" 
-            class="flag" 
-          />
-        </p>
-        
-        <!-- Stelle in base al voto -->
-        <div class="stars">
-          <span v-for="n in 5" :key="n" class="me-1">
-            <i :class="n <= filledStars ? 'fas fa-star' : 'far fa-star'"></i>
-          </span>
-        </div>
-
-        <p>{{ movie.overview }}</p>
+  <div 
+    class="movie-card position-relative" 
+    @mouseover="fetchCastAndGenres" 
+    @mouseleave="showDetails = false"
+    :style="{ backgroundImage: `url(https://image.tmdb.org/t/p/w342/${movie.poster_path})` }"
+  >
+    <div v-if="showDetails" class="movie-details p-3 text-light">
+      <!-- Dettagli del film o serie -->
+      <h5>{{ movie.title || movie.name }}</h5>
+      <p>Titolo Originale: {{ movie.original_title || movie.original_name }}</p>
+      <p>
+        Lingua: 
+        <img 
+          :src="getFlagUrl(movie.original_language)" 
+          alt="Bandiera" 
+          class="flag" 
+        />
+      </p>
+      <div class="stars">
+        <span v-for="n in 5" :key="n" class="me-1">
+          <i :class="n <= filledStars ? 'fas fa-star' : 'far fa-star'"></i>
+        </span>
       </div>
+      <p>{{ movie.overview }}</p>
+      <p>Generi: {{ genres }}</p>
+      <p>Cast:</p>
+      <ul>
+        <li v-for="actor in cast" :key="actor.id">{{ actor.name }}</li>
+      </ul>
     </div>
   </div>
 </template>
@@ -35,91 +35,121 @@
 <script>
 export default {
   props: {
-    movie: Object, // Riceve i dettagli del singolo film o serie
-  },  
-  
+    movie: Object,
+  },
   data() {
     return {
-      showDetails: false, // Stato per mostrare/nascondere i dettagli al passaggio del mouse
+      showDetails: false,
+      cast: [],
+      genres: '',
     };
   },
-
   computed: {
-    // Calcola il numero di stelle piene in base al voto
     filledStars() {
-      return Math.ceil(this.movie.vote_average / 2); // Arrotonda il voto da 1 a 5 stelle
+      return Math.ceil(this.movie.vote_average / 2);
     },
   },
-  
   methods: {
-    // Metodo per ottenere l'URL della bandiera in base al codice lingua
     getFlagUrl(language) {
       const flagMap = {
-        us: 'us',  // Stati Uniti  
-        en: 'gb',  // Inglese          
-        it: 'it',  // Italiano
-        fr: 'fr',  // Francese
-        es: 'es',  // Spagnolo
-        pt: 'pt',  // Portoghese
-        de: 'de',  // Tedesco
-        ja: 'jp',  // Giapponese
-        ko: 'kr',  // Coreano
-        zh: 'cn',  // Cinese
+        us: 'us',
+        en: 'gb',
+        it: 'it',
+        fr: 'fr',
+        es: 'es',
+        pt: 'pt',
+        de: 'de',
+        ja: 'jp',
+        ko: 'kr',
+        zh: 'cn',
       };
-      const flagCode = flagMap[language] || 'un'; // Se la lingua non esiste, mostra una bandiera "non definita"
+      const flagCode = flagMap[language] || 'un';
       return `https://flagcdn.com/h40/${flagCode}.png`;
+    },
+
+    fetchCastAndGenres() {
+      this.showDetails = true; // Mostra i dettagli al passaggio del mouse
+      const apiKey = '3e71fbf202442d5cfffde584ebf5b815';
+      const movieId = this.movie.id;
+      const mediaType = this.movie.media_type || (this.movie.title ? 'movie' : 'tv');
+
+      const apiUrl = `https://api.themoviedb.org/3/${mediaType}/${movieId}/credits?api_key=${apiKey}&language=it_IT`;
+
+      fetch(apiUrl)
+        .then(response => response.json())
+        .then(data => {
+          this.cast = data.cast.slice(0, 5);
+          this.genres = this.movie.genre_ids.map(id => {
+            const genreMap = {
+              28: 'Azione',
+              12: 'Avventura',
+              16: 'Animazione',
+              35: 'Commedia',
+              80: 'Crimine',
+              99: 'Documentario',
+              18: 'Drammatico',
+              10751: 'Familiare',
+              14: 'Fantasy',
+              36: 'Storia',
+              27: 'Horror',
+              10402: 'Musica',
+              9648: 'Mystery',
+              10749: 'Romantico',
+              878: 'Fantascienza',
+              10770: 'Film TV',
+              53: 'Thriller',
+              10752: 'Guerra',
+              37: 'Western',
+            };
+            return genreMap[id] || 'Sconosciuto';
+          }).join(', ');
+        })
+        .catch(error => console.error('Errore API cast:', error));
     },
   },
 };
 </script>
 
 <style scoped>
-/* Stili per la card del film */
 .movie-card {
-  background-size: cover;
-  background-position: center;
-  height: 400px;
-  margin-bottom: 20px;
-  border-radius: 10px;
-  position: relative;
+  width: 300px; 
+  height: 450px;
+  padding: 10px;
+  margin-bottom: 30px;
+  margin-left: 40px;
+  background-size: cover; 
+  background-position: center; 
+  border-radius: 10px; 
   overflow: hidden;
+  transition: transform 0.3s ease-in-out;
+}
+
+.movie-card:hover {
+  transform: scale(1.05); 
 }
 
 .movie-details {
+  font-size: 0.6em;
+  height: 100%;
   position: absolute;
-  top: 0;
+  bottom: 0;
   left: 0;
   right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.3s;
-  font-size: 11px;
+  background: rgba(0, 0, 0, 0.7);
+  display: none;
+  padding: 10px;
 }
 
 .movie-card:hover .movie-details {
-  opacity: 1;
-}
-
-/* Stili per le stelle */
-.stars {
-  display: flex;
-}
-
-.fas.fa-star {
-  color: #ffc107; 
-}
-
-.far.fa-star {
-  color: #ccc; /* Grigio per le stelle vuote */
+  display: block; 
 }
 
 .flag {
-  width: 20px; /* Dimensione della bandiera */
+  width: 20px;
   height: auto;
-  margin-left: 5px; /* Spazio tra la lingua e la bandiera */
+}
+
+.stars i {
+  color: #FFD700;
 }
 </style>

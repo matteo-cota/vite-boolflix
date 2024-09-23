@@ -84,35 +84,42 @@ export default {
       movies: [],
       tvShows: [],
       currentSection: 'home',
+      apiKey: '3e71fbf202442d5cfffde584ebf5b815',
     };
   },
   methods: {
-    handleSearch(query) {
-      const apiKey = '3e71fbf202442d5cfffde584ebf5b815';
-      const movieApiUrl = `https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&query=${query}&language=it_IT`;
-      const tvApiUrl = `https://api.themoviedb.org/3/search/tv?api_key=${apiKey}&query=${query}&language=it_IT`;
+    fetchMovies(query) {
+      const movieApiUrl = `https://api.themoviedb.org/3/search/movie?api_key=${this.apiKey}&query=${query}&language=it_IT`;
 
-      Promise.all([fetch(movieApiUrl), fetch(tvApiUrl)])
-        .then(async ([movieResponse, tvResponse]) => {
-          const moviesData = await movieResponse.json();
-          const tvData = await tvResponse.json();
-          this.movies = moviesData.results || [];
-          this.tvShows = tvData.results || [];
-          this.currentSection = 'home'; // Imposta la sezione su "Home" dopo la ricerca
+      fetch(movieApiUrl)
+        .then(response => response.json())
+        .then(data => {
+          this.movies = data.results || [];
+          this.currentSection = 'home'; 
         })
-        .catch(error => console.error('Errore API:', error));
+        .catch(error => console.error('Errore API film:', error));
     },
 
-    loadHome() {
-      this.currentSection = 'home';
-      this.loadMovies();
-      this.loadTvShows();
+    fetchTvShows(query) {
+      const tvApiUrl = `https://api.themoviedb.org/3/search/tv?api_key=${this.apiKey}&query=${query}&language=it_IT`;
+
+      fetch(tvApiUrl)
+        .then(response => response.json())
+        .then(data => {
+          this.tvShows = data.results || [];
+          this.currentSection = 'home'; 
+        })
+        .catch(error => console.error('Errore API serie TV:', error));
+    },
+
+    handleSearch(query) {
+      this.fetchMovies(query);
+      this.fetchTvShows(query);
     },
 
     loadMovies() {
       this.currentSection = 'movies';
-      const apiKey = '3e71fbf202442d5cfffde584ebf5b815';
-      const popularMoviesApiUrl = `https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}&language=it_IT`;
+      const popularMoviesApiUrl = `https://api.themoviedb.org/3/movie/popular?api_key=${this.apiKey}&language=it_IT`;
 
       fetch(popularMoviesApiUrl)
         .then(response => response.json())
@@ -125,8 +132,7 @@ export default {
 
     loadTvShows() {
       this.currentSection = 'tvShows';
-      const apiKey = '3e71fbf202442d5cfffde584ebf5b815';
-      const popularTvShowsApiUrl = `https://api.themoviedb.org/3/tv/popular?api_key=${apiKey}&language=it_IT`;
+      const popularTvShowsApiUrl = `https://api.themoviedb.org/3/tv/popular?api_key=${this.apiKey}&language=it_IT`;
 
       fetch(popularTvShowsApiUrl)
         .then(response => response.json())
@@ -136,12 +142,20 @@ export default {
         })
         .catch(error => console.error('Errore API serie TV popolari:', error));
     },
+
+    loadHome() {
+      this.currentSection = 'home';
+      this.loadMovies(); // Carica i film popolari
+      this.loadTvShows(); // Carica le serie TV popolari
+    },
   },
   mounted() {
-    this.loadHome();
+    this.loadHome(); // Carica home al montaggio del componente
   },
 };
 </script>
+
+
 
 <style scoped>
 /* Stili per il layout */
@@ -174,6 +188,6 @@ header {
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 1400px;
 }
 </style>
